@@ -112,6 +112,36 @@ DESTROY(Compress::Zstd::Compressor self)
 CODE:
     ZSTD_freeCCtx(self);
 
+SV*
+compress(Compress::Zstd::Compressor self, SV* source)
+PREINIT:
+    const char* src;
+    STRLEN src_len;
+    SV* dest;
+    char* dst;
+    size_t bound, ret;
+CODE:
+    if (SvROK(source)) {
+        source = SvRV(source);
+    }
+    if (!SvOK(source)) {
+        XSRETURN_UNDEF;
+    }
+    src = SvPVbyte(source, src_len);
+    bound = ZSTD_compressBound(src_len);
+    dest = newSV(bound + 1);
+    dst = SvPVX(dest);
+    ret = ZSTD_compressCCtx(self, dst, bound + 1, src, src_len, 1); /* XXX level */
+    if (ZSTD_isError(ret)) {
+        XSRETURN_UNDEF;
+    }
+    dst[ret] = '\0';
+    SvCUR_set(dest, ret);
+    SvPOK_on(dest);
+    RETVAL = dest;
+OUTPUT:
+    RETVAL
+
 
 MODULE = Compress::Zstd PACKAGE = Compress::Zstd::Decompressor
 
@@ -127,3 +157,37 @@ void
 DESTROY(Compress::Zstd::Decompressor self)
 CODE:
     ZSTD_freeDCtx(self);
+
+SV*
+decompress(Compress::Zstd::Decompressor self, SV* source)
+PREINIT:
+    const char* src;
+    STRLEN src_len;
+    unsigned long long dest_len;
+    SV* dest;
+    char* dst;
+    size_t ret;
+CODE:
+    if (SvROK(source)) {
+        source = SvRV(source);
+    }
+    if (!SvOK(source)) {
+        XSRETURN_UNDEF;
+    }
+    src = SvPVbyte(source, src_len);
+    dest_len = ZSTD_getDecompressedSize(src, src_len);
+    if (dest_len == ULLONG_MAX) {
+        XSRETURN_UNDEF;
+    }
+    dest = newSV(dest_len + 1);
+    dst = SvPVX(dest);
+    ret = ZSTD_decompressDCtx(self, dst, dest_len + 1, src, src_len);
+    if (ZSTD_isError(ret)) {
+        XSRETURN_UNDEF;
+    }
+    dst[ret] = '\0';
+    SvCUR_set(dest, ret);
+    SvPOK_on(dest);
+    RETVAL = dest;
+OUTPUT:
+    RETVAL
