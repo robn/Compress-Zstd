@@ -13,6 +13,10 @@ extern "C" {
 #include "ppport.h"
 #include "zstd.h"
 
+typedef ZSTD_CCtx *Compress__Zstd__Compressor;
+typedef ZSTD_DCtx *Compress__Zstd__Decompressor;
+
+
 MODULE = Compress::Zstd PACKAGE = Compress::Zstd
 
 BOOT:
@@ -91,3 +95,35 @@ PPCODE:
     SvPOK_on(dest);
     EXTEND(SP, 1);
     PUSHs(dest);
+
+
+MODULE = Compress::Zstd PACKAGE = Compress::Zstd::Compressor
+
+Compress::Zstd::Compressor
+new(SV* class)
+CODE:
+    PERL_UNUSED_VAR(class);
+    RETVAL = ZSTD_createCCtx();
+OUTPUT:
+    RETVAL
+
+void
+DESTROY(Compress::Zstd::Compressor self)
+CODE:
+    ZSTD_freeCCtx(self);
+
+
+MODULE = Compress::Zstd PACKAGE = Compress::Zstd::Decompressor
+
+Compress::Zstd::Decompressor
+new(SV* class)
+CODE:
+    PERL_UNUSED_VAR(class);
+    RETVAL = ZSTD_createDCtx();
+OUTPUT:
+    RETVAL
+
+void
+DESTROY(Compress::Zstd::Decompressor self)
+CODE:
+    ZSTD_freeDCtx(self);
