@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/spiritloose/Compress-Zstd.svg?branch=master)](https://travis-ci.org/spiritloose/Compress-Zstd)
+[![Build Status](https://travis-ci.org/robn/Compress-Zstd.svg?branch=master)](https://travis-ci.org/robn/Compress-Zstd)
 # NAME
 
 Compress::Zstd - Perl interface to the Zstd (Zstandard) (de)compressor
