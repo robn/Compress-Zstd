@@ -113,7 +113,7 @@ CODE:
     ZSTD_freeCCtx(self);
 
 SV*
-compress(Compress::Zstd::Compressor self, SV* source)
+compress(Compress::Zstd::Compressor self, SV* source, int level = 1)
 PREINIT:
     const char* src;
     STRLEN src_len;
@@ -131,7 +131,7 @@ CODE:
     bound = ZSTD_compressBound(src_len);
     dest = newSV(bound + 1);
     dst = SvPVX(dest);
-    ret = ZSTD_compressCCtx(self, dst, bound + 1, src, src_len, 1); /* XXX level */
+    ret = ZSTD_compressCCtx(self, dst, bound + 1, src, src_len, level);
     if (ZSTD_isError(ret)) {
         XSRETURN_UNDEF;
     }
