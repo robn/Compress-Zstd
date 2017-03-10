@@ -13,9 +13,16 @@ extern "C" {
 #include "ppport.h"
 #include "zstd.h"
 
-typedef ZSTD_CCtx *Compress__Zstd__Compressor;
-typedef ZSTD_DCtx *Compress__Zstd__Decompressor;
+struct Compressor {
+    ZSTD_CCtx* cctx;
+};
 
+struct Decompressor {
+    ZSTD_DCtx* dctx;
+};
+
+typedef struct Compressor   *Compress__Zstd__Compressor;
+typedef struct Decompressor *Compress__Zstd__Decompressor;
 
 MODULE = Compress::Zstd PACKAGE = Compress::Zstd
 
@@ -103,14 +110,15 @@ Compress::Zstd::Compressor
 new(SV* class)
 CODE:
     PERL_UNUSED_VAR(class);
-    RETVAL = ZSTD_createCCtx();
+    Newxz(RETVAL, 1, struct Compressor);
+    RETVAL->cctx = ZSTD_createCCtx();
 OUTPUT:
     RETVAL
 
 void
 DESTROY(Compress::Zstd::Compressor self)
 CODE:
-    ZSTD_freeCCtx(self);
+    ZSTD_freeCCtx(self->cctx);
 
 SV*
 compress(Compress::Zstd::Compressor self, SV* source, int level = 1)
@@ -131,7 +139,7 @@ CODE:
     bound = ZSTD_compressBound(src_len);
     dest = newSV(bound + 1);
     dst = SvPVX(dest);
-    ret = ZSTD_compressCCtx(self, dst, bound + 1, src, src_len, level);
+    ret = ZSTD_compressCCtx(self->cctx, dst, bound + 1, src, src_len, level);
     if (ZSTD_isError(ret)) {
         XSRETURN_UNDEF;
     }
@@ -149,14 +157,15 @@ Compress::Zstd::Decompressor
 new(SV* class)
 CODE:
     PERL_UNUSED_VAR(class);
-    RETVAL = ZSTD_createDCtx();
+    Newxz(RETVAL, 1, struct Decompressor);
+    RETVAL->dctx = ZSTD_createDCtx();
 OUTPUT:
     RETVAL
 
 void
 DESTROY(Compress::Zstd::Decompressor self)
 CODE:
-    ZSTD_freeDCtx(self);
+    ZSTD_freeDCtx(self->dctx);
 
 SV*
 decompress(Compress::Zstd::Decompressor self, SV* source)
@@ -181,7 +190,7 @@ CODE:
     }
     dest = newSV(dest_len + 1);
     dst = SvPVX(dest);
-    ret = ZSTD_decompressDCtx(self, dst, dest_len + 1, src, src_len);
+    ret = ZSTD_decompressDCtx(self->dctx, dst, dest_len + 1, src, src_len);
     if (ZSTD_isError(ret)) {
         XSRETURN_UNDEF;
     }
