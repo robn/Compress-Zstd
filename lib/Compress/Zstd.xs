@@ -165,7 +165,7 @@ CODE:
         ret = ZSTD_compressCCtx(self->cctx, dst, bound + 1, src, src_len, level);
     }
     if (ZSTD_isError(ret)) {
-        XSRETURN_UNDEF;
+        croak("compress: %s", ZSTD_getErrorName(ret));
     }
     dst[ret] = '\0';
     SvCUR_set(dest, ret);
@@ -238,7 +238,7 @@ CODE:
         ret = ZSTD_decompressDCtx(self->dctx, dst, dest_len + 1, src, src_len);
     }
     if (ZSTD_isError(ret)) {
-        XSRETURN_UNDEF;
+        croak("decompress: %s", ZSTD_getErrorName(ret));
     }
     dst[ret] = '\0';
     SvCUR_set(dest, ret);
