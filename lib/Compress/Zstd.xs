@@ -130,9 +130,6 @@ PREINIT:
     const char* dict;
     STRLEN dict_len;
 CODE:
-    if (SvROK(dictionary)) {
-        dictionary = SvRV(dictionary);
-    }
     if (!SvOK(dictionary)) {
         XSRETURN_UNDEF;
     }
@@ -148,9 +145,6 @@ PREINIT:
     char* dst;
     size_t bound, ret;
 CODE:
-    if (SvROK(source)) {
-        source = SvRV(source);
-    }
     if (!SvOK(source)) {
         XSRETURN_UNDEF;
     }
@@ -199,9 +193,6 @@ PREINIT:
     const char* dict;
     STRLEN dict_len;
 CODE:
-    if (SvROK(dictionary)) {
-        dictionary = SvRV(dictionary);
-    }
     if (!SvOK(dictionary)) {
         XSRETURN_UNDEF;
     }
@@ -218,9 +209,6 @@ PREINIT:
     char* dst;
     size_t ret;
 CODE:
-    if (SvROK(source)) {
-        source = SvRV(source);
-    }
     if (!SvOK(source)) {
         XSRETURN_UNDEF;
     }
