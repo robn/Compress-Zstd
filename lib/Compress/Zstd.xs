@@ -15,10 +15,12 @@ extern "C" {
 
 struct Compressor {
     ZSTD_CCtx* cctx;
+    ZSTD_CDict* dict;
 };
 
 struct Decompressor {
     ZSTD_DCtx* dctx;
+    ZSTD_DDict* dict;
 };
 
 typedef struct Compressor   *Compress__Zstd__Compressor;
@@ -118,7 +120,24 @@ OUTPUT:
 void
 DESTROY(Compress::Zstd::Compressor self)
 CODE:
+    if (self->dict)
+        ZSTD_freeCDict(self->dict);
     ZSTD_freeCCtx(self->cctx);
+
+void
+set_dictionary(Compress::Zstd::Compressor self, SV* dictionary, int level = 1)
+PREINIT:
+    const char* dict;
+    STRLEN dict_len;
+CODE:
+    if (SvROK(dictionary)) {
+        dictionary = SvRV(dictionary);
+    }
+    if (!SvOK(dictionary)) {
+        XSRETURN_UNDEF;
+    }
+    dict = SvPVbyte(dictionary, dict_len);
+    self->dict = ZSTD_createCDict(dict, dict_len, level);
 
 SV*
 compress(Compress::Zstd::Compressor self, SV* source, int level = 1)
@@ -139,7 +158,12 @@ CODE:
     bound = ZSTD_compressBound(src_len);
     dest = newSV(bound + 1);
     dst = SvPVX(dest);
-    ret = ZSTD_compressCCtx(self->cctx, dst, bound + 1, src, src_len, level);
+    if (self->dict) {
+        ret = ZSTD_compress_usingCDict(self->cctx, dst, bound + 1, src, src_len, self->dict);
+    }
+    else {
+        ret = ZSTD_compressCCtx(self->cctx, dst, bound + 1, src, src_len, level);
+    }
     if (ZSTD_isError(ret)) {
         XSRETURN_UNDEF;
     }
@@ -165,7 +189,24 @@ OUTPUT:
 void
 DESTROY(Compress::Zstd::Decompressor self)
 CODE:
+    if (self->dict)
+        ZSTD_freeDDict(self->dict);
     ZSTD_freeDCtx(self->dctx);
+
+void
+set_dictionary(Compress::Zstd::Decompressor self, SV* dictionary)
+PREINIT:
+    const char* dict;
+    STRLEN dict_len;
+CODE:
+    if (SvROK(dictionary)) {
+        dictionary = SvRV(dictionary);
+    }
+    if (!SvOK(dictionary)) {
+        XSRETURN_UNDEF;
+    }
+    dict = SvPVbyte(dictionary, dict_len);
+    self->dict = ZSTD_createDDict(dict, dict_len);
 
 SV*
 decompress(Compress::Zstd::Decompressor self, SV* source)
@@ -190,7 +231,12 @@ CODE:
     }
     dest = newSV(dest_len + 1);
     dst = SvPVX(dest);
-    ret = ZSTD_decompressDCtx(self->dctx, dst, dest_len + 1, src, src_len);
+    if (self->dict) {
+        ret = ZSTD_decompress_usingDDict(self->dctx, dst, dest_len + 1, src, src_len, self->dict);
+    }
+    else {
+        ret = ZSTD_decompressDCtx(self->dctx, dst, dest_len + 1, src, src_len);
+    }
     if (ZSTD_isError(ret)) {
         XSRETURN_UNDEF;
     }
